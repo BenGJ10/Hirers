@@ -1,16 +1,16 @@
 package com.bengj.hirers.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Instant;
 
-@Data
+
 @Entity
 @Table(name = "contacts")
+@Getter @Setter
 public class Contact {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

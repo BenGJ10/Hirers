@@ -1,7 +1,6 @@
 package com.bengj.hirers.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +9,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "companies")
-@Data
+@Getter @Setter
 public class Company {
 
     @Id

@@ -1,7 +1,9 @@
 package com.bengj.hirers.company.service;
 
 import com.bengj.hirers.dto.CompanyDto;
+import com.bengj.hirers.dto.JobDto;
 import com.bengj.hirers.entity.Company;
+import com.bengj.hirers.entity.Job;
 import com.bengj.hirers.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,16 +22,51 @@ public class CompanyService implements ICompanyService{
     public List<CompanyDto> getAllCompanies() {
         List<Company> companyList = companyRepository.findAll();
         return companyList.stream()
-                .map(this::transformToDto)
+                .map(this::transformCompanyToDto)
                 .collect(Collectors.toList());
     }
 
     // Utility method to transform Company entity to CompanyDto
-    private CompanyDto transformToDto(Company company){
+    private CompanyDto transformCompanyToDto(Company company){
+        List<JobDto> jobDtos = company.getJobs().stream()
+                .map(this::transformToJobDto)
+                .toList();
+
         return new CompanyDto(
-                company.getID(), company.getName(), company.getLogo(),
+                company.getId(), company.getName(), company.getLogo(),
                 company.getIndustry(), company.getSize(), company.getRating(),
                 company.getLocations(), company.getFounded(), company.getDescription(),
-                company.getEmployees(), company.getWebsite(), company.getCreatedAt());
+                company.getEmployees(), company.getWebsite(), company.getCreatedAt(),
+                jobDtos);
+    }
+
+    // Utility method to transform Job entity to JobDto
+    private JobDto transformToJobDto(Job job){
+        return new JobDto(
+                job.getId(),
+                job.getTitle(),
+                job.getCompany().getId(),
+                job.getCompany().getName(),
+                job.getCompany().getLogo(),
+                job.getLocation(),
+                job.getWorkType(),
+                job.getJobType(),
+                job.getCategory(),
+                job.getExperienceLevel(),
+                job.getSalaryMin(),
+                job.getSalaryMax(),
+                job.getSalaryCurrency(),
+                job.getSalaryPeriod(),
+                job.getDescription(),
+                job.getRequirements(),
+                job.getBenefits(),
+                job.getPostedDate(),
+                job.getApplicationDeadline(),
+                job.getApplicationsCount(),
+                job.getFeatured(),
+                job.getUrgent(),
+                job.getRemote(),
+                job.getStatus()
+        );
     }
 }

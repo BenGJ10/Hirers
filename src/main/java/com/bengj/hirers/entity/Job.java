@@ -16,17 +16,6 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "jobs")
-@AttributeOverrides({
-        @AttributeOverride(name = "createdAt",
-                column = @Column(nullable = false)),
-        @AttributeOverride(name = "createdBy",
-                column = @Column(nullable = false,
-                        length = 20)),
-        @AttributeOverride(name = "updatedAt",
-                column = @Column),
-        @AttributeOverride(name = "updatedBy",
-                column = @Column(length = 20))})
-
 public class Job extends BaseEntity {
 
         @Id

@@ -1,13 +1,13 @@
 package com.bengj.hirers.security.jwt;
 
 import com.bengj.hirers.constant.ApplicationConstants;
+import com.bengj.hirers.entity.HirersUser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -25,7 +25,7 @@ public class JwtUtil {
     /*
      * Generates a JWT token for the authenticated user.
     
-     * @param authentication The authentication object containing user details.
+     * @param authentication is The authentication object containing user details.
      * @return The generated JWT token.
      */
     public String generateToken(Authentication authentication){
@@ -39,20 +39,21 @@ public class JwtUtil {
         SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
         // Fetch the user details from the authentication object
-        User fetchedUser = (User) authentication.getPrincipal();
+        HirersUser fetchedUser = (HirersUser) authentication.getPrincipal();
         if(fetchedUser == null){
             return null;
         }
-        
-        // Get the username and roles from the fetched user
-        String username = fetchedUser.getUsername();
-        String roles = fetchedUser.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
+
+        // Fetch the user's roles and convert them to a comma-separated string'
+        String roles = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
 
         // Build the JWT token using the Jwts builder
         token = Jwts.builder()
                 .issuer("Hirers")
                 .subject("")
-                .claim("username", username)
+                .claim("name", fetchedUser.getName())
+                .claim("email", fetchedUser.getEmail())
+                .claim("mobileNumber", fetchedUser.getMobileNumber())
                 .claim("roles", roles)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))

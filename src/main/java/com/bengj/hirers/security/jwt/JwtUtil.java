@@ -22,6 +22,12 @@ public class JwtUtil {
     private final Environment env;
     private static final long EXPIRATION_TIME = 30L * 24 * 60 * 60 * 1000;
 
+    /*
+     * Generates a JWT token for the authenticated user.
+    
+     * @param authentication The authentication object containing user details.
+     * @return The generated JWT token.
+     */
     public String generateToken(Authentication authentication){
         String token;
 

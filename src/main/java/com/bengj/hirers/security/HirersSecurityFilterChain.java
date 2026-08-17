@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.password.HaveIBeenPwnedRestApiPasswordChecker;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -40,7 +42,7 @@ public class HirersSecurityFilterChain {
     @Bean
     /**
         * Configures the security filter chain for the application.
-        * Disables CSRF protection and enables CORS with a custom configuration.
+        * This method sets up CSRF protection, CORS configuration, and authorization rules for public and secured paths.
         * Defines public and secured paths for authorization.
         * Adds a JWT token filter before the basic authentication filter.
         * Disables form login and enables HTTP Basic authentication.
@@ -50,13 +52,18 @@ public class HirersSecurityFilterChain {
         * @throws Exception If an error occurs during configuration.
      */
     SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(AbstractHttpConfigurer::disable)
+        return http.csrf(csrfConfig -> csrfConfig.
+                        csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(requests -> {
                     publicPaths.forEach(path -> requests.requestMatchers(path).permitAll());
                     securedPaths.forEach(path -> requests.requestMatchers(path).authenticated());
                     requests.anyRequest().denyAll();
                 })
+
                 .addFilterBefore(new JwtTokenFilter(publicPaths), BasicAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(withDefaults())

@@ -89,41 +89,15 @@ public class AuthController {
 
     
     /**
-     * Handles user registration requests. It checks for compromised passwords, verifies if the email or mobile number is already registered,
-     * and creates a new user in the database if all checks pass. Returns appropriate responses based on the outcome of the registration process.
-     *
+     * Handles user registration requests. It creates a new user in the system with the provided details, encodes the password, assigns a default role, and saves the user to the database.
+     * If the registration is successful, it returns a success response; otherwise, it returns an appropriate error response.
+     * 
      * @param registerRequestDto The registration request containing user details.
      * @return A ResponseEntity indicating the result of the registration process.
      */
     @PostMapping(value = "/register/public", version = "1.0")
     public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequestDto){
-        
-        // Check if the provided password is compromised using the CompromisedPasswordChecker
-        CompromisedPasswordDecision decision = compromisedPasswordChecker.check(registerRequestDto.password());
-        if (decision.isCompromised()) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("password", "Choose a strong password"));
-        }
 
-        // Check if a user with the provided email or mobile number already exists in the database
-        Optional<HirersUser> existingUser = hirersUserRepository.readUserByEmailOrMobileNumber(
-                registerRequestDto.email(), registerRequestDto.mobileNumber());
-
-        // If a user with the same email or mobile number exists, return an error response indicating the conflict
-        if(existingUser.isPresent()){
-            Map<String, String> errors = new HashMap<>();
-            HirersUser user = existingUser.get();
-            if (user.getEmail().equalsIgnoreCase(registerRequestDto.email())) {
-                errors.put("email", "Email is already registered");
-            }
-            if (user.getMobileNumber().equals(registerRequestDto.mobileNumber())) {
-                errors.put("mobileNumber", "Mobile number is already registered");
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
-        }
-
-        // If no existing user is found, create a new HirersUser object and copy properties from the registration request DTO
         HirersUser user = new HirersUser();
         BeanUtils.copyProperties(registerRequestDto, user);
 

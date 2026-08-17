@@ -34,7 +34,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private final List<String> publicPaths;
     
     @Override
-    /*
+    /**
         * This method is called for each incoming HTTP request. It checks for the presence of a JWT token in the Authorization header,
           validates it, and sets the authentication in the security context if valid.
         * If the token is expired or invalid, it responds with an appropriate error message.
@@ -96,7 +96,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
 
     @Override
-    /*
+    /**
      * This method determines whether the filter should be applied to the incoming request. It checks if the request URI matches any of the public paths defined in the application.
      * If it does, the filter will not be applied, allowing public access to those endpoints.
      

@@ -22,7 +22,7 @@ public class JwtUtil {
     private final Environment env;
     private static final long EXPIRATION_TIME = 30L * 24 * 60 * 60 * 1000;
 
-    /*
+    /**
      * Generates a JWT token for the authenticated user.
     
      * @param authentication is The authentication object containing user details.
@@ -35,7 +35,7 @@ public class JwtUtil {
         String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,
                 ApplicationConstants.JWT_SECRET_DEFAULT_VALUE);
         
-                // Create a SecretKey object from the secret key string
+        // Create a SecretKey object from the secret key string
         SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
         // Fetch the user details from the authentication object

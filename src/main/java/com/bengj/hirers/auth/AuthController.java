@@ -1,33 +1,60 @@
 package com.bengj.hirers.auth;
 
+import com.bengj.hirers.constant.ApplicationConstants;
 import com.bengj.hirers.dto.LoginRequestDto;
 import com.bengj.hirers.dto.LoginResponseDto;
+import com.bengj.hirers.dto.RegisterRequestDto;
 import com.bengj.hirers.dto.UserDto;
+import com.bengj.hirers.entity.HirersUser;
+import com.bengj.hirers.entity.Role;
+import com.bengj.hirers.repository.HirersUserRepository;
+import com.bengj.hirers.repository.RoleRepository;
 import com.bengj.hirers.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.password.CompromisedPasswordChecker;
+import org.springframework.security.authentication.password.CompromisedPasswordDecision;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final HirersUserRepository hirersUserRepository;
+    private final AuthenticationManager authenticationManager;
+    private final CompromisedPasswordChecker compromisedPasswordChecker;
 
-    @PostMapping("/login/public")
-    public ResponseEntity<LoginResponseDto> login(LoginRequestDto loginRequestDto){
+    /**
+     * Handles user login requests. It authenticates the user using the provided credentials, generates a JWT token upon successful authentication,
+     * and returns a response containing the token and user details. If authentication fails, it returns an appropriate error response.
+     *
+     * @param loginRequestDto The login request containing the user's email and password.
+     * @return A ResponseEntity containing the login response or an error message.
+     */
+    @PostMapping(value = "/login/public", version = "1.0")
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
         try{
             // Authenticate the user using the provided credentials
-            var authenticationResult = authenticationManager.authenticate(
+            Authentication authenticationResult = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequestDto.username(), loginRequestDto.password()));
             
             // Generate a JWT token for the authenticated user
@@ -35,6 +62,15 @@ public class AuthController {
             
             // Create a UserDto object to include in the response (you can populate it with user details as needed)
             UserDto userDto = new UserDto();
+            
+            // Copy properties from the authenticated user to the UserDto
+            HirersUser loggedInUser = (HirersUser) authenticationResult.getPrincipal();
+            BeanUtils.copyProperties(loggedInUser, userDto);
+            
+            // Set additional properties in the UserDto if needed
+            userDto.setRole(loggedInUser.getRole().getName());
+            userDto.setUserId(loggedInUser.getId());
+
             return ResponseEntity.status(HttpStatus.OK)
                     .body(new LoginResponseDto(HttpStatus.OK.getReasonPhrase(),
                             userDto, jwtToken));
@@ -51,6 +87,60 @@ public class AuthController {
         }
     }
 
+    
+    /**
+     * Handles user registration requests. It checks for compromised passwords, verifies if the email or mobile number is already registered,
+     * and creates a new user in the database if all checks pass. Returns appropriate responses based on the outcome of the registration process.
+     *
+     * @param registerRequestDto The registration request containing user details.
+     * @return A ResponseEntity indicating the result of the registration process.
+     */
+    @PostMapping(value = "/register/public", version = "1.0")
+    public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequestDto){
+        
+        // Check if the provided password is compromised using the CompromisedPasswordChecker
+        CompromisedPasswordDecision decision = compromisedPasswordChecker.check(registerRequestDto.password());
+        if (decision.isCompromised()) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("password", "Choose a strong password"));
+        }
+
+        // Check if a user with the provided email or mobile number already exists in the database
+        Optional<HirersUser> existingUser = hirersUserRepository.readUserByEmailOrMobileNumber(
+                registerRequestDto.email(), registerRequestDto.mobileNumber());
+
+        // If a user with the same email or mobile number exists, return an error response indicating the conflict
+        if(existingUser.isPresent()){
+            Map<String, String> errors = new HashMap<>();
+            HirersUser user = existingUser.get();
+            if (user.getEmail().equalsIgnoreCase(registerRequestDto.email())) {
+                errors.put("email", "Email is already registered");
+            }
+            if (user.getMobileNumber().equals(registerRequestDto.mobileNumber())) {
+                errors.put("mobileNumber", "Mobile number is already registered");
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }
+
+        // If no existing user is found, create a new HirersUser object and copy properties from the registration request DTO
+        HirersUser user = new HirersUser();
+        BeanUtils.copyProperties(registerRequestDto, user);
+
+        // Encode the user's password and set the deaf before saving the user to the database
+        user.setPasswordHash(passwordEncoder.encode(registerRequestDto.password()));
+        Role role = roleRepository.findRoleByName(ApplicationConstants.ROLE_JOB_SEEKER).orElseThrow(
+                () -> new IllegalStateException("Role not found: " + ApplicationConstants.ROLE_JOB_SEEKER));
+        user.setRole(role);
+
+        // Save the new user to the database and return a success response
+        hirersUserRepository.save(user);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
+    }   
+
+    
+    // Custom method to build error responses for login and registration endpoints
     private ResponseEntity<LoginResponseDto> buildErrorResponse(HttpStatus status, String message) {
         return ResponseEntity
                 .status(status)

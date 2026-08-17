@@ -14,6 +14,14 @@ import java.util.Arrays;
 public class LoggingAndPerformanceAspect {
 
     @Around("execution(* com.bengj.hirers..*.*(..))")
+    /**
+     * Logs the method execution details and measures the execution time of the method.
+     * It logs the method name, input arguments, and execution time in milliseconds.
+     * 
+     * @param joinPoint
+     * @return The result of the method execution.
+     * @throws Throwable if the method execution throws any exception.
+     */
     public Object logAndMeasureExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable{
         long startTime = System.currentTimeMillis();
         String methodName = joinPoint.getSignature().toShortString();

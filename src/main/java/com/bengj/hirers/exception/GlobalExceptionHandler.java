@@ -31,6 +31,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(dto, HttpStatus.INTERNAL_SERVER_ERROR);
     }   
 
+
     // Used to handle validation exceptions for method arguments annotated with @Valid
     // If a method argument fails validation, i.e. it does not meet the constraints defined by annotations like @NotNull, @Size, etc., this method will be invoked
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -40,6 +41,7 @@ public class GlobalExceptionHandler {
         fieldErrorList.forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
         return ResponseEntity.badRequest().body(errors);
     }
+
 
     // Used to handle validation exceptions for method parameters annotated with @Valid
     // If a method parameter fails validation, i.e. it does not meet the constraints defined by annotations like @NotNull, @Size, etc., this method will be invoked
@@ -60,6 +62,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errors);
     }
 
+
     // Used to handle NullPointerExceptions specifically
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ErrorResponseDto> handleNullException(Exception exception, WebRequest webRequest) {
@@ -67,5 +70,12 @@ public class GlobalExceptionHandler {
                 webRequest.getDescription(false), HttpStatus.INTERNAL_SERVER_ERROR,
                 "A NullPointerException occurred due to : "+exception.getMessage(), LocalDateTime.now());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // Used to handle RegistrationValidationException specifically
+    @ExceptionHandler(RegistrationValidationException.class)
+    public ResponseEntity<Map<String, String>> handleRegistrationException(
+            RegistrationValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getErrors());
     }
 }

@@ -12,6 +12,10 @@ import java.util.List;
 @Entity
 @Table(name = "companies")
 @Getter @Setter
+@NamedQueries({
+        @NamedQuery(name = "Company.fetchCompaniesWithJobsByStatus",
+                query = "SELECT DISTINCT c FROM Company c JOIN FETCH c.jobs j WHERE j.status = :status")
+})
 public class Company extends BaseEntity{
 
     @Id

@@ -1,5 +1,6 @@
 package com.bengj.hirers.company.service;
 
+import com.bengj.hirers.constant.ApplicationConstants;
 import com.bengj.hirers.dto.CompanyDto;
 import com.bengj.hirers.dto.JobDto;
 import com.bengj.hirers.entity.Company;
@@ -20,7 +21,7 @@ public class CompanyService implements ICompanyService{
     // Method to retrieve all companies and transform them into CompanyDto objects
     @Override
     public List<CompanyDto> getAllCompanies() {
-        List<Company> companyList = companyRepository.findAll();
+        List<Company> companyList = companyRepository.fetchCompaniesWithJobsByStatus(ApplicationConstants.JOB_STATUS_ACTIVE);
         return companyList.stream()
                 .map(this::transformCompanyToDto)
                 .collect(Collectors.toList());

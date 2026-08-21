@@ -1,6 +1,7 @@
 package com.bengj.hirers.security;
 
 import com.bengj.hirers.security.jwt.JwtTokenFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +40,9 @@ public class HirersSecurityFilterChain {
     @Qualifier("securedPaths")
     private final List<String> securedPaths;
 
+    @Qualifier("adminPaths")
+    private final List<String> adminPaths;
+
     @Bean
     /**
         * Configures the security filter chain for the application.
@@ -52,21 +56,28 @@ public class HirersSecurityFilterChain {
         * @throws Exception If an error occurs during configuration.
      */
     SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http.csrf(csrfConfig -> csrfConfig.
-                        csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+        return http.csrf(csrfConfig -> csrfConfig
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 
                 .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
 
                 .authorizeHttpRequests(requests -> {
                     publicPaths.forEach(path -> requests.requestMatchers(path).permitAll());
+                    adminPaths.forEach(path -> requests.requestMatchers(path).hasRole("ADMIN"));
                     securedPaths.forEach(path -> requests.requestMatchers(path).authenticated());
                     requests.anyRequest().denyAll();
                 })
 
                 .addFilterBefore(new JwtTokenFilter(publicPaths), BasicAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(withDefaults())
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Access Denied\", \"message\": \"You don't have permission to access this resource\"}");
+                        }))
                 .build();
     }
 

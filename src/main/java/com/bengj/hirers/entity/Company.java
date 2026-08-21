@@ -14,8 +14,29 @@ import java.util.List;
 @Getter @Setter
 @NamedQueries({
         @NamedQuery(name = "Company.fetchCompaniesWithJobsByStatus",
-                query = "SELECT DISTINCT c FROM Company c JOIN FETCH c.jobs j WHERE j.status = :status")
+                query = "SELECT DISTINCT c FROM Company c JOIN FETCH c.jobs j WHERE j.status = :status"),
+
+        @NamedQuery(name = "Company.updateCompany",
+                query =
+                        """
+                                UPDATE Company c SET
+                                                            c.name = :name,
+                                                            c.logo = :logo,
+                                                            c.industry = :industry,
+                                                            c.size = :size,
+                                                            c.rating = :rating,
+                                                            c.locations = :locations,
+                                                            c.founded = :founded,
+                                                            c.description = :description,
+                                                            c.employees = :employees,
+                                                            c.website = :website
+                                                        WHERE c.id = :id
+                        """)
 })
+@NamedNativeQueries({
+        @NamedNativeQuery(name = "Company.fetchCompaniesWithJobsByStatusNative",
+                query = "SELECT DISTINCT c.* FROM companies c JOIN jobs j ON c.id = j.company_id WHERE j.status = ?",
+                resultClass = Company.class)})
 public class Company extends BaseEntity{
 
     @Id

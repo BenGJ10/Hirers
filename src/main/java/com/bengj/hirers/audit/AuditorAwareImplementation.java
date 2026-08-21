@@ -1,5 +1,6 @@
 package com.bengj.hirers.audit;
 
+import com.bengj.hirers.util.ApplicationUtility;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,6 @@ public class AuditorAwareImplementation implements AuditorAware<String> {
 
     @Override
     public Optional<String> getCurrentAuditor() {
-        return Optional.of("Anonymous");
+        return Optional.of(ApplicationUtility.getLoggedInUser());
     }
 }

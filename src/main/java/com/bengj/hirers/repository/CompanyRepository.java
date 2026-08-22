@@ -1,6 +1,7 @@
 package com.bengj.hirers.repository;
 
 import com.bengj.hirers.entity.Company;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,13 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     // A named query that fetches companies with their jobs based on the status
     List<Company> fetchCompaniesWithJobsByStatus(@Param("status") String status);
 
+    @CacheEvict(value = "companies", allEntries = true)
+    void deleteById(Long id);
+
+    @CacheEvict(value = "companies", allEntries = true)
+    Company save(Company company);
+
+    @CacheEvict(value = "companies", allEntries = true)
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     int updateCompany(
             @Param("id") Long id,

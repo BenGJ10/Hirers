@@ -8,6 +8,7 @@ import com.bengj.hirers.entity.Job;
 import com.bengj.hirers.repository.CompanyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ public class CompanyService implements ICompanyService{
 
     // Method to retrieve all companies for admin and transform them into CompanyDto objects
     @Override
+    @Cacheable("companies")
     public List<CompanyDto> getAllCompaniesForAdmin() {
         List<Company> companyList = companyRepository.findAll();
         return companyList.stream()

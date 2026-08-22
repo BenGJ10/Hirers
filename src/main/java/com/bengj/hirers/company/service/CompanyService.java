@@ -52,7 +52,7 @@ public class CompanyService implements ICompanyService{
     @Override
     @Transactional
     public boolean updateCompany(Long id, CompanyDto companyDto) {
-        int updatedRecords = companyRepository.updateCompanyDetails(
+        int updatedRecords = companyRepository.updateCompany(
                 id,companyDto.name(),companyDto.logo(),
                 companyDto.industry(),companyDto.size(),companyDto.rating(),
                 companyDto.locations(),companyDto.founded(),companyDto.description(),

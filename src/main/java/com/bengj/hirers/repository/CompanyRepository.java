@@ -20,7 +20,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     List<Company> fetchCompaniesWithJobsByStatus(@Param("status") String status);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    int updateCompanyDetails(
+    int updateCompany(
             @Param("id") Long id,
             @Param("name") String name,
             @Param("logo") String logo,

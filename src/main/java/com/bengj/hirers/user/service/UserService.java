@@ -10,6 +10,10 @@ import com.bengj.hirers.repository.HirersUserRepository;
 import com.bengj.hirers.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,20 @@ public class UserService implements IUserService{
     private final HirersUserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final RoleRepository roleRepository;
+
+    // Method to retrieve all users with pagination and sorting
+    @Override
+    public Page<UserDto> getAllUsers(int pageNumber, int pageSize, String sortBy, String sortDir) {
+        // Create a Sort object based on the provided sort parameters
+        Sort sort = sortDir.equalsIgnoreCase("desc")
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+
+        // Create a pageable object with the specified page number and page size
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+
+        return userRepository.findAll(pageable).map(this::mapToUserDto);
+    }
 
     // Method to search for a user by email and return an Optional<UserDto>
     @Override

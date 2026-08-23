@@ -1,16 +1,12 @@
 package com.bengj.hirers.user.service;
 
 import com.bengj.hirers.constant.ApplicationConstants;
+import com.bengj.hirers.dto.JobDto;
 import com.bengj.hirers.dto.ProfileDto;
 import com.bengj.hirers.dto.UserDto;
-import com.bengj.hirers.entity.Company;
-import com.bengj.hirers.entity.HirersUser;
-import com.bengj.hirers.entity.Profile;
-import com.bengj.hirers.entity.Role;
-import com.bengj.hirers.repository.CompanyRepository;
-import com.bengj.hirers.repository.HirersUserRepository;
-import com.bengj.hirers.repository.ProfileRepository;
-import com.bengj.hirers.repository.RoleRepository;
+import com.bengj.hirers.entity.*;
+import com.bengj.hirers.repository.*;
+import com.bengj.hirers.util.ApplicationUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -24,17 +20,22 @@ import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+// read-only transactions by default, can be overridden for specific methods. 
+// It helps in optimizing performance for read operations by avoiding unnecessary locking and flushing of the persistence context.
+@Transactional(readOnly = true) 
 public class UserService implements IUserService{
 
     private final HirersUserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final RoleRepository roleRepository;
     private final ProfileRepository profileRepository;
+    private final JobRepository jobRepository;
 
     // Method to retrieve all users with pagination and sorting
     @Override
@@ -156,6 +157,45 @@ public class UserService implements IUserService{
         }
         return mapToProfileDto(user.getProfile(), true);
     }
+
+    // Method to save a job to the user's saved jobs list'
+    @Override
+    @Transactional
+    public JobDto saveJob(String userEmail, Long jobId){
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
+
+        user.getSavedJobs().add(job);
+        return ApplicationUtility.transformJobToDto(job);
+    }
+
+    // Method to unsave a job from the user's saved jobs list'
+    @Override
+    @Transactional
+    public void unsaveJob(String userEmail, Long jobId){
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
+
+        user.getSavedJobs().remove(job);
+    }
+
+    // Method to retrieve a user's saved jobs list'
+    @Override
+    public List<JobDto> getSavedJobs(String userEmail) {
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        return user.getSavedJobs().stream()
+                .map(ApplicationUtility::transformJobToDto)
+                .collect(Collectors.toList());
+    }
+
 
 
     // Utility method to transform ProfileDto to Profile entity and handle file uploads

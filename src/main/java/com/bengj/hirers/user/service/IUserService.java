@@ -1,11 +1,13 @@
 package com.bengj.hirers.user.service;
 
+import com.bengj.hirers.dto.JobDto;
 import com.bengj.hirers.dto.ProfileDto;
 import com.bengj.hirers.dto.UserDto;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IUserService {
@@ -25,4 +27,10 @@ public interface IUserService {
     ProfileDto getProfilePicture(String userEmail);
 
     ProfileDto getResume(String userEmail);
+
+    JobDto saveJob(String userEmail, Long jobId);
+
+    void unsaveJob(String userEmail, Long jobId);
+
+    List<JobDto> getSavedJobs(String userEmail);
 }

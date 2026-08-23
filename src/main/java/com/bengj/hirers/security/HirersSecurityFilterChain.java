@@ -43,6 +43,9 @@ public class HirersSecurityFilterChain {
     @Qualifier("adminPaths")
     private final List<String> adminPaths;
 
+    @Qualifier("employerPaths")
+    private final List<String> employerPaths;
+
     @Bean
     /**
         * Configures the security filter chain for the application.
@@ -66,6 +69,7 @@ public class HirersSecurityFilterChain {
                     publicPaths.forEach(path -> requests.requestMatchers(path).permitAll());
                     adminPaths.forEach(path -> requests.requestMatchers(path).hasRole("ADMIN"));
                     securedPaths.forEach(path -> requests.requestMatchers(path).authenticated());
+                    employerPaths.forEach(path -> requests.requestMatchers(path).hasRole("EMPLOYER"));
                     requests.anyRequest().denyAll();
                 })
 

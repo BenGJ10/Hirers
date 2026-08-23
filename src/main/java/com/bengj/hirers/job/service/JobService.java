@@ -24,15 +24,20 @@ public class JobService implements IJobService{
     private final JobRepository jobRepository;
     private final HirersUserRepository userRepository;
 
+
+    // Method to get jobs for a specific employer by their email
     @Override
     public List<JobDto> getEmployerJobs(String employerEmail){
+        // Find the employer by email
         HirersUser employer = userRepository.findUserByEmail(employerEmail)
                 .orElseThrow(() -> new RuntimeException("Employer not found"));
 
+        // Check if the employer has a company assigned
         if(employer.getCompany() == null){
             throw new RuntimeException("Employer does not have a company assigned");
         }
 
+        // Retrieve the jobs associated with the employer's company and transform them to DTOs
         List<Job> jobs = employer.getCompany().getJobs();
         return jobs.stream()
                 .map(ApplicationUtility::transformJobToDto)
@@ -40,6 +45,7 @@ public class JobService implements IJobService{
     }
 
 
+    // Method to update the status of a job based on jobId, new status, and employer's email
     @Override
     @Transactional
     public JobDto updateJobStatus(Long jobId, String status, String employerEmail) {
@@ -54,10 +60,12 @@ public class JobService implements IJobService{
         HirersUser employer = userRepository.findUserByEmail(employerEmail)
                 .orElseThrow(() -> new RuntimeException("Employer not found"));
 
+        // Check if the employer has a company assigned
         if (employer.getCompany() == null) {
             throw new RuntimeException("Employer does not have a company assigned");
         }
 
+        // Find the job by jobId within the employer's company jobs
         Job job = employer.getCompany().getJobs().stream()
                 .filter(j -> j.getId().equals(jobId))
                 .findFirst()
@@ -66,27 +74,34 @@ public class JobService implements IJobService{
         return ApplicationUtility.transformJobToDto(job);
     }
 
+
+    // Method to create a new job for an employer based on the provided JobDto and employer's email
     @Override
     @Transactional
     public JobDto createJob(JobDto jobDto, String employerEmail){
+        // Find the employer by email
         HirersUser employer = userRepository.findUserByEmail(employerEmail)
                 .orElseThrow(() -> new RuntimeException("Employer not found"));
 
+        // Check if the employer has a company assigned
         if(employer.getCompany() == null){
             throw new RuntimeException("Employer does not have a company assigned");
         }
 
+        // Create a new Job entity from the provided JobDto, set its properties, and save it to the repository
         Job job = transformDtoToEntity(jobDto);
         job.setPostedDate(Instant.now());
         job.setApplicationsCount(0);
         job.setStatus(ApplicationConstants.JOB_STATUS_DRAFT);
         job.setCompany(employer.getCompany());
 
+        // We have to save the job manually, as hibernate will not automatically persist the job when we set it to the company's jobs list
         Job savedJob = jobRepository.save(job);
         return ApplicationUtility.transformJobToDto(jobRepository.save(savedJob));
     }
 
 
+    // Utility method to transform JobDto to Job entity
     private Job transformDtoToEntity(JobDto jobDto) {
         Job job = new Job();
         BeanUtils.copyProperties(jobDto, job);

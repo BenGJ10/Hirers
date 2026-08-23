@@ -19,6 +19,7 @@ public class JobController {
 
     private final IJobService jobService;
 
+    // Retrieve all jobs for the authenticated employer
     @GetMapping(path = "/employer", version = "1.0")
     public ResponseEntity<List<JobDto>> getEmployerJobs(Authentication authentication) {
         String employerEmail = authentication.getName();
@@ -26,6 +27,7 @@ public class JobController {
         return ResponseEntity.ok(jobs);
     }
 
+    // Create a new job for the authenticated employer
     @PostMapping(path = "/employer", version = "1.0")
     public ResponseEntity<JobDto> createJob(@RequestBody @Valid JobDto jobDto, Authentication authentication) {
         String employerEmail = authentication.getName();
@@ -33,15 +35,18 @@ public class JobController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdJob);
     }
 
-    @PatchMapping(path = "/{jobId}/statys/employer", version = "1.0")
+    // Update the status of a job for the authenticated employer
+    @PatchMapping(path = "/{jobId}/status/employer", version = "1.0")
     public ResponseEntity<?> updateJobStatus(
             @PathVariable Long jobId,
             @RequestBody Map<String, String> requestBody,
             Authentication authentication){
 
+        // Get the authenticated employer's email and the new status from the request body
         String employerEmail = authentication.getName();
         String status = requestBody.get("status");
 
+        // Validate that the status is provided in the request body
         if(status == null || status.trim().isEmpty()){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", "Status is required"));

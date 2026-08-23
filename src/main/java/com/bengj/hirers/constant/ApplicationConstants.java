@@ -13,6 +13,8 @@ public class ApplicationConstants {
 
     public static final String ROLE_JOB_SEEKER="ROLE_JOB_SEEKER";
     public static final String JOB_STATUS_ACTIVE="ACTIVE";
+    public static final String JOB_STATUS_CLOSED="CLOSED";
+    public static final String JOB_STATUS_DRAFT="DRAFT";
 
     public static final String NEW_MESSAGE="NEW";
     public static final String READ_MESSAGE="READ";
@@ -22,6 +24,5 @@ public class ApplicationConstants {
 
     public static final String ROLE_ADMIN="ROLE_ADMIN";
     public static final String ROLE_EMPLOYER="ROLE_EMPLOYER";
-
 
 }

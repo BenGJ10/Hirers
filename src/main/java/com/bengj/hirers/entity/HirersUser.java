@@ -47,4 +47,7 @@ public class HirersUser extends BaseEntity {
     @JoinColumn(name = "company_id")
     private Company company;
 
+    @OneToOne(mappedBy = "user")
+    private Profile profile;
+
 }

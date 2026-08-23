@@ -6,6 +6,7 @@ import com.bengj.hirers.dto.JobDto;
 import com.bengj.hirers.entity.Company;
 import com.bengj.hirers.entity.Job;
 import com.bengj.hirers.repository.CompanyRepository;
+import com.bengj.hirers.util.ApplicationUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.Cacheable;
@@ -74,7 +75,7 @@ public class CompanyService implements ICompanyService{
     // Utility method to transform Company entity to CompanyDto
     private CompanyDto transformCompanyToDto(Company company){
         List<JobDto> jobDtos = company.getJobs().stream()
-                .map(this::transformToJobDto)
+                .map(ApplicationUtility::transformJobToDto)
                 .toList();
 
         return new CompanyDto(
@@ -83,36 +84,6 @@ public class CompanyService implements ICompanyService{
                 company.getLocations(), company.getFounded(), company.getDescription(),
                 company.getEmployees(), company.getWebsite(), company.getCreatedAt(),
                 jobDtos);
-    }
-
-    // Utility method to transform Job entity to JobDto
-    private JobDto transformToJobDto(Job job){
-        return new JobDto(
-                job.getId(),
-                job.getTitle(),
-                job.getCompany().getId(),
-                job.getCompany().getName(),
-                job.getCompany().getLogo(),
-                job.getLocation(),
-                job.getWorkType(),
-                job.getJobType(),
-                job.getCategory(),
-                job.getExperienceLevel(),
-                job.getSalaryMin(),
-                job.getSalaryMax(),
-                job.getSalaryCurrency(),
-                job.getSalaryPeriod(),
-                job.getDescription(),
-                job.getRequirements(),
-                job.getBenefits(),
-                job.getPostedDate(),
-                job.getApplicationDeadline(),
-                job.getApplicationsCount(),
-                job.getFeatured(),
-                job.getUrgent(),
-                job.getRemote(),
-                job.getStatus()
-        );
     }
 
     // Utility method to transform CompanyDto to Company entity

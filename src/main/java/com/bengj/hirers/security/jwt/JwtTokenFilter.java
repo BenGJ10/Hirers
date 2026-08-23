@@ -71,7 +71,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                         .getPayload();
                 
                 // Extract the username and roles from the claims in the JWT token
-                String username = String.valueOf(claims.get("username"));
+                String username = String.valueOf(claims.get("email"));
                 String roles = String.valueOf(claims.get("roles"));
                 
                 // Create an Authentication object with the extracted username and roles

@@ -1,7 +1,10 @@
 package com.bengj.hirers.user.service;
 
+import com.bengj.hirers.dto.ProfileDto;
 import com.bengj.hirers.dto.UserDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -14,4 +17,12 @@ public interface IUserService {
     UserDto assignCompanyToEmployer(Long userId, Long companyId);
 
     Page<UserDto> getAllUsers(int pageNumber, int pageSize, String sortBy, String sortDir);
+
+    ProfileDto createOrUpdateProfile(String userEmail, String profileJson, MultipartFile profilePicture, MultipartFile resume) throws JsonProcessingException;
+
+    ProfileDto getProfile(String userEmail);
+
+    ProfileDto getProfilePicture(String userEmail);
+
+    ProfileDto getResume(String userEmail);
 }

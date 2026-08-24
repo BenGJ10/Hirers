@@ -32,20 +32,20 @@ public class Job extends BaseEntity {
 
 
         /*
-         * The @NotNull annotation is a validation constraint that ensures the company field cannot be null. 
+         * The @NotNull annotation is a validation constraint that ensures the company field cannot be null.
            This means that every job must be associated with a company, and if an attempt is made to save a job without a company, a validation error will occur.
-                
+
          * The @ManyToOne annotation indicates that many jobs can belong to one company. The fetch type is set to LAZY, which means that the company data will only be loaded when it is explicitly accessed,
            rather than being loaded immediately with the job data. The optional attribute is set to false, indicating that a job must always be associated with a company.
-                
-         * The @OnDelete annotation specifies a database constraint that when a company is deleted, all associated jobs should also be deleted. 
+
+         * The @OnDelete annotation specifies a database constraint that when a company is deleted, all associated jobs should also be deleted.
            This is database-level enforcement of the cascading delete behavior, ensuring that there are no orphaned job records in the database when a company is removed.
-                
-         * The @JoinColumn annotation specifies the foreign key column in the jobs table that references the companies table. The name attribute defines the name of the foreign key column, 
+
+         * The @JoinColumn annotation specifies the foreign key column in the jobs table that references the companies table. The name attribute defines the name of the foreign key column,
            and nullable = false indicates that this column cannot be null, enforcing the requirement that every job must be associated with a company. This ensures referential integrity between the jobs and companies tables in the database.
-         */        
-        @NotNull        
-        @ManyToOne(fetch = FetchType.LAZY, optional = false)         
+         */
+        @NotNull
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
         @OnDelete(action = OnDeleteAction.CASCADE)
         @JoinColumn(name = "company_id", nullable = false)
         private Company company;
@@ -140,4 +140,7 @@ public class Job extends BaseEntity {
 
         @ManyToMany(mappedBy = "savedJobs")
         private Set<HirersUser> savedByUsers = new LinkedHashSet<>();
+
+        @OneToMany(mappedBy = "job")
+        private Set<JobApplication> jobApplications = new LinkedHashSet<>();
 }

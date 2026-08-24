@@ -1,10 +1,9 @@
 package com.bengj.hirers.user.controller;
 
-import com.bengj.hirers.dto.JobDto;
-import com.bengj.hirers.dto.ProfileDto;
-import com.bengj.hirers.dto.UserDto;
+import com.bengj.hirers.dto.*;
 import com.bengj.hirers.user.service.IUserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
@@ -32,7 +31,7 @@ public class UserController {
             @RequestParam(defaultValue = "0") int pageNumber,
             @RequestParam(defaultValue = "10") int pageSize,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "asc") String sortDir){
+            @RequestParam(defaultValue = "asc") String sortDir) {
 
         Page<UserDto> userDtoPage = userService.
                 getAllUsers(pageNumber, pageSize, sortBy, sortDir);
@@ -129,7 +128,7 @@ public class UserController {
         return new ResponseEntity<>(resume, headers, HttpStatus.OK);
     }
 
-
+    // Save a job for the authenticated jobseeker
     @PostMapping(path = "/saved-jobs/{jobId}/jobseeker", version = "1.0")
     public ResponseEntity<JobDto> saveJob(@PathVariable Long jobId,
                                           Authentication authentication) {
@@ -138,6 +137,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedJob);
     }
 
+    // Unsave a job for the authenticated jobseeker
     @DeleteMapping(path = "/saved-jobs/{jobId}/jobseeker", version = "1.0")
     public ResponseEntity<String> unsaveJob(@PathVariable Long jobId,
                                             Authentication authentication) {
@@ -146,6 +146,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body("Job unsaved successfully");
     }
 
+    // Get all saved jobs for the authenticated jobseeker
     @GetMapping(path = "/saved-jobs/jobseeker", version = "1.0")
     public ResponseEntity<List<JobDto>> getSavedJobs(Authentication authentication) {
         String userEmail = authentication.getName();
@@ -153,4 +154,31 @@ public class UserController {
         return ResponseEntity.ok(savedJobDtos);
     }
 
+    // Apply for a job as the authenticated jobseeker
+    @PostMapping(path = "/job-applications/jobseeker", version = "1.0")
+    public ResponseEntity<JobApplicationDto> applyForJob(
+            @RequestBody @Valid ApplyJobRequestDto applyJobRequestDto,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        JobApplicationDto jobApplicationDto = userService.applyForJob(
+                userEmail, applyJobRequestDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(jobApplicationDto);
+    }
+
+    // Withdraw a job application as the authenticated jobseeker
+    @DeleteMapping(path = "/job-applications/{jobId}/jobseeker", version = "1.0")
+    public ResponseEntity<String> withdrawApplication(
+            @PathVariable Long jobId, Authentication authentication) {
+        String userEmail = authentication.getName();
+        userService.withdrawApplication(userEmail, jobId);
+        return ResponseEntity.status(HttpStatus.OK).body("Application withdrawn successfully");
+    }
+
+    // Get all job applications for the authenticated jobseeker
+    @GetMapping(path = "/job-applications/jobseeker", version = "1.0")
+    public ResponseEntity<List<JobApplicationDto>> getJobApplications(Authentication authentication) {
+        String userEmail = authentication.getName();
+        List<JobApplicationDto> applications = userService.getJobSeekerApplications(userEmail);
+        return ResponseEntity.ok(applications);
+    }
 }

@@ -70,6 +70,8 @@ public class AuthController {
             // Set additional properties in the UserDto if needed
             userDto.setRole(loggedInUser.getRole().getName());
             userDto.setUserId(loggedInUser.getId());
+            userDto.setCompanyId(loggedInUser.getCompany() != null ? loggedInUser.getCompany().getId() : null);
+            userDto.setCompanyName(loggedInUser.getCompany() != null ? loggedInUser.getCompany().getName() : null);
 
             return ResponseEntity.status(HttpStatus.OK)
                     .body(new LoginResponseDto(HttpStatus.OK.getReasonPhrase(),

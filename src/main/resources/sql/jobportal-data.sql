@@ -59,7 +59,7 @@ INSERT INTO companies (name, logo, industry, size, rating, locations, founded, d
 
 INSERT INTO companies (name, logo, industry, size, rating, locations, founded, description, employees, website, created_by) VALUES ('Figma', '/logos/figma.png', 'Technology', 'Medium', 4.7, 'San Francisco,New York,London', 2012, 'Figma is a leading technology company founded in 2012. We''re committed to innovation and creating exceptional experiences for our customers and employees.', 1000, 'https://www.figma.com', 'SYSTEM');
 
--- Insert jobs data
+-- Insert savedJobs data
 
 INSERT INTO jobs (title, company_id, location, work_type, job_type, category, experience_level,
                   salary_min, salary_max, salary_currency, salary_period, description, requirements, benefits,

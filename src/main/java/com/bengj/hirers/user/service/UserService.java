@@ -1,9 +1,7 @@
 package com.bengj.hirers.user.service;
 
 import com.bengj.hirers.constant.ApplicationConstants;
-import com.bengj.hirers.dto.JobDto;
-import com.bengj.hirers.dto.ProfileDto;
-import com.bengj.hirers.dto.UserDto;
+import com.bengj.hirers.dto.*;
 import com.bengj.hirers.entity.*;
 import com.bengj.hirers.repository.*;
 import com.bengj.hirers.util.ApplicationUtility;
@@ -20,13 +18,14 @@ import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-// read-only transactions by default, can be overridden for specific methods. 
+// read-only transactions by default, can be overridden for specific methods.
 // It helps in optimizing performance for read operations by avoiding unnecessary locking and flushing of the persistence context.
 @Transactional(readOnly = true) 
 public class UserService implements IUserService{
@@ -36,6 +35,7 @@ public class UserService implements IUserService{
     private final RoleRepository roleRepository;
     private final ProfileRepository profileRepository;
     private final JobRepository jobRepository;
+    private final JobApplicationRepository jobApplicationRepository;
 
     // Method to retrieve all users with pagination and sorting
     @Override
@@ -196,7 +196,105 @@ public class UserService implements IUserService{
                 .collect(Collectors.toList());
     }
 
+    // Method to apply for a job based on the provided userEmail and ApplyJobRequestDto
+    @Override
+    @Transactional
+    public JobApplicationDto applyForJob(String userEmail, ApplyJobRequestDto request) {
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
+        // Check if the user has already applied for the job
+        Long jobId = request.jobId();
+        if(jobApplicationRepository.existsByUserIdAndJobId(user.getId(), jobId)){
+            throw new RuntimeException("You have already applied for this job");
+        }
+
+        // Validate the jobId
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
+
+        // Create a new JobApplication entity and set its properties
+        JobApplication application = new JobApplication();
+        application.setUser(user);
+        application.setJob(job);
+        application.setAppliedAt(Instant.now());
+        application.setStatus(ApplicationConstants.PENDING);
+        application.setCoverLetter(request.coverLetter());
+
+        // Increment the applications count for the job
+        job.setApplicationsCount(job.getApplicationsCount() + 1);
+
+        return mapToJobApplicationDto(application);
+    }
+
+    // Method to withdraw a job application based on the provided userEmail and jobId
+    @Override
+    public void withdrawApplication(String userEmail, Long jobId) {
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        if(!jobApplicationRepository.existsByUserIdAndJobId(user.getId(), jobId)){
+            throw new RuntimeException("You have not applied for this job");
+        }
+
+        jobApplicationRepository.deleteByUserIdAndJobId(user.getId(), jobId);
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with id: " + jobId));
+
+        if(job.getApplicationsCount() != null && job.getApplicationsCount() > 0){
+            job.setApplicationsCount(job.getApplicationsCount() - 1);
+        }
+    }
+
+    // Method to retrieve all job applications made by a user based on the provided userEmail
+    @Override
+    public List<JobApplicationDto> getJobSeekerApplications(String userEmail) {
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        return user.getJobApplications().stream()
+                .map(this::mapToJobApplicationDto)
+                .collect(Collectors.toList());
+    }
+
+    // Utility method to transform Job entity to JobDto
+    private JobApplicationDto mapToJobApplicationDto(JobApplication application) {
+        // Map profile if exists
+        ProfileDto profileDto = null;
+        Profile profile = application.getUser().getProfile();
+        if (profile != null) {
+            profileDto = new ProfileDto(
+                    profile.getId(),
+                    profile.getUser().getId(),
+                    profile.getJobTitle(),
+                    profile.getLocation(),
+                    profile.getExperienceLevel(),
+                    profile.getProfessionalBio(),
+                    profile.getPortfolioWebsite(),
+                    profile.getProfilePicture(),
+                    profile.getProfilePictureName(),
+                    profile.getProfilePictureType(),
+                    profile.getResume(),
+                    profile.getResumeName(),
+                    profile.getResumeType(),
+                    profile.getCreatedAt(),
+                    profile.getUpdatedAt()
+            );
+        }
+        return new JobApplicationDto(
+                application.getId(),
+                application.getUser().getId(),
+                application.getUser().getName(),
+                application.getUser().getEmail(),
+                application.getUser().getMobileNumber(),
+                profileDto,
+                ApplicationUtility.transformJobToDto(application.getJob()),
+                application.getAppliedAt(),
+                application.getStatus(),
+                application.getCoverLetter(),
+                application.getNotes()
+        );
+    }
 
     // Utility method to transform ProfileDto to Profile entity and handle file uploads
     private Profile mapToProfile(Profile profile, ProfileDto profileDto, MultipartFile profilePicture, MultipartFile resume) {

@@ -1,8 +1,6 @@
 package com.bengj.hirers.user.service;
 
-import com.bengj.hirers.dto.JobDto;
-import com.bengj.hirers.dto.ProfileDto;
-import com.bengj.hirers.dto.UserDto;
+import com.bengj.hirers.dto.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,4 +31,10 @@ public interface IUserService {
     void unsaveJob(String userEmail, Long jobId);
 
     List<JobDto> getSavedJobs(String userEmail);
+
+    JobApplicationDto applyForJob(String userEmail, ApplyJobRequestDto request);
+
+    void withdrawApplication(String userEmail, Long jobId);
+
+    List<JobApplicationDto> getJobSeekerApplications(String userEmail);
 }

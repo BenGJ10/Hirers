@@ -1,10 +1,14 @@
 package com.bengj.hirers.job.service;
 
 import com.bengj.hirers.constant.ApplicationConstants;
+import com.bengj.hirers.dto.JobApplicationDto;
 import com.bengj.hirers.dto.JobDto;
+import com.bengj.hirers.dto.UpdateJobApplicationDto;
 import com.bengj.hirers.entity.HirersUser;
 import com.bengj.hirers.entity.Job;
+import com.bengj.hirers.entity.JobApplication;
 import com.bengj.hirers.repository.HirersUserRepository;
+import com.bengj.hirers.repository.JobApplicationRepository;
 import com.bengj.hirers.repository.JobRepository;
 import com.bengj.hirers.util.ApplicationUtility;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +27,7 @@ public class JobService implements IJobService{
 
     private final JobRepository jobRepository;
     private final HirersUserRepository userRepository;
+    private final JobApplicationRepository jobApplicationRepository;
 
 
     // Method to get jobs for a specific employer by their email
@@ -100,6 +105,23 @@ public class JobService implements IJobService{
         return ApplicationUtility.transformJobToDto(jobRepository.save(savedJob));
     }
 
+    // Method to get all job applications for a specific job
+    @Override
+    public List<JobApplicationDto> getApplicationsByJobForEmployer(Long jobId) {
+        List<JobApplication> applications = jobApplicationRepository.findByJobIdOrderByAppliedAtAsc(jobId);
+        return applications.stream()
+                .map(ApplicationUtility::mapToJobApplicationDto)
+                .collect(Collectors.toList());
+    }
+
+    // Method to update the status and notes of a job application
+    @Override
+    @Transactional
+    public boolean updateJobApplication(UpdateJobApplicationDto dto) {
+        int updatedRows = jobApplicationRepository.updateStatusAndNotesById(
+                dto.status().name(), dto.notes(), dto.applicationId(), ApplicationUtility.getLoggedInUser());
+        return updatedRows > 0;
+    }
 
     // Utility method to transform JobDto to Job entity
     private Job transformDtoToEntity(JobDto jobDto) {

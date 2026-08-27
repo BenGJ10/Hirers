@@ -15,6 +15,11 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "job_applications")
+@NamedQueries({
+        @NamedQuery(name= "JobApplication.updateStatusAndNotesById",
+                query = "UPDATE JobApplication j SET j.status = :status, j.notes = :notes, " +
+                        " j.updatedAt = CURRENT_TIMESTAMP, j.updatedBy = :updatedBy WHERE j.id = :id")
+})
 public class JobApplication extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

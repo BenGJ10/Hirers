@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.bengj.hirers.util.ApplicationUtility.mapToJobApplicationDto;
+
 @Service
 @RequiredArgsConstructor
 // read-only transactions by default, can be overridden for specific methods.
@@ -220,15 +222,17 @@ public class UserService implements IUserService{
         application.setAppliedAt(Instant.now());
         application.setStatus(ApplicationConstants.PENDING);
         application.setCoverLetter(request.coverLetter());
+        JobApplication saved = jobApplicationRepository.save(application);
 
         // Increment the applications count for the job
-        job.setApplicationsCount(job.getApplicationsCount() + 1);
-
-        return mapToJobApplicationDto(application);
+        job.setApplicationsCount(job.getApplicationsCount() != null ? job.getApplicationsCount() + 1 : 1);
+        jobRepository.save(job);
+        return ApplicationUtility.mapToJobApplicationDto(saved);
     }
 
     // Method to withdraw a job application based on the provided userEmail and jobId
     @Override
+    @Transactional
     public void withdrawApplication(String userEmail, Long jobId) {
         HirersUser user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
@@ -253,48 +257,10 @@ public class UserService implements IUserService{
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
         return user.getJobApplications().stream()
-                .map(this::mapToJobApplicationDto)
+                .map(ApplicationUtility::mapToJobApplicationDto)
                 .collect(Collectors.toList());
     }
 
-    // Utility method to transform Job entity to JobDto
-    private JobApplicationDto mapToJobApplicationDto(JobApplication application) {
-        // Map profile if exists
-        ProfileDto profileDto = null;
-        Profile profile = application.getUser().getProfile();
-        if (profile != null) {
-            profileDto = new ProfileDto(
-                    profile.getId(),
-                    profile.getUser().getId(),
-                    profile.getJobTitle(),
-                    profile.getLocation(),
-                    profile.getExperienceLevel(),
-                    profile.getProfessionalBio(),
-                    profile.getPortfolioWebsite(),
-                    profile.getProfilePicture(),
-                    profile.getProfilePictureName(),
-                    profile.getProfilePictureType(),
-                    profile.getResume(),
-                    profile.getResumeName(),
-                    profile.getResumeType(),
-                    profile.getCreatedAt(),
-                    profile.getUpdatedAt()
-            );
-        }
-        return new JobApplicationDto(
-                application.getId(),
-                application.getUser().getId(),
-                application.getUser().getName(),
-                application.getUser().getEmail(),
-                application.getUser().getMobileNumber(),
-                profileDto,
-                ApplicationUtility.transformJobToDto(application.getJob()),
-                application.getAppliedAt(),
-                application.getStatus(),
-                application.getCoverLetter(),
-                application.getNotes()
-        );
-    }
 
     // Utility method to transform ProfileDto to Profile entity and handle file uploads
     private Profile mapToProfile(Profile profile, ProfileDto profileDto, MultipartFile profilePicture, MultipartFile resume) {

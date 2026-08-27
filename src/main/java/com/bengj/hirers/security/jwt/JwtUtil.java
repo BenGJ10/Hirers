@@ -5,6 +5,8 @@ import com.bengj.hirers.entity.HirersUser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,15 +14,29 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@PropertySource(value = "classpath:jwt.properties")
 public class JwtUtil {
 
     private final Environment env;
-    private static final long EXPIRATION_TIME = 30L * 24 * 60 * 60 * 1000;
+
+    @Value("${jwt.issuer:Hirers}")
+    private String jwtIssuer;
+
+    @Value("${jwt.subject:Hirers Json Web Token}")
+    private String jwtSubject;
+
+    @Value("${jwt.expiration.hours:1}")
+    private int jwtExpirationHours;
+
+    @Value("${jwt.prod.expiration.hours:1}")
+    private int jwtProdExpirationHours;
 
     /**
      * Generates a JWT token for the authenticated user.
@@ -30,6 +46,12 @@ public class JwtUtil {
      */
     public String generateToken(Authentication authentication){
         String token;
+
+        int expirationHours = jwtExpirationHours;
+        List<String> profiles = Arrays.asList(env.getActiveProfiles());
+        if(profiles.contains("prod")){
+            expirationHours = jwtProdExpirationHours;
+        }
 
         // Get the secret key from the environment variables or use the default value
         String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,
@@ -49,14 +71,14 @@ public class JwtUtil {
 
         // Build the JWT token using the Jwts builder
         token = Jwts.builder()
-                .issuer("Hirers")
-                .subject("")
+                .issuer(jwtIssuer)
+                .subject(jwtSubject)
                 .claim("name", fetchedUser.getName())
                 .claim("email", fetchedUser.getEmail())
                 .claim("mobileNumber", fetchedUser.getMobileNumber())
                 .claim("roles", roles)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .expiration(new Date(System.currentTimeMillis() + (long) expirationHours * 60 * 60 * 1000))
                 .signWith(secretKey)
                 .compact();
 

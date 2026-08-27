@@ -7,7 +7,7 @@ public class ApplicationConstants {
     }
 
     public static final String JWT_SECRET_KEY="JWT_SECRET_KEY";
-    public static final String JWT_SECRET_DEFAULT_VALUE="ndaijsoandaioian3128609hb@9jsiai9iklaksmxj8jqwh";
+    public static final String JWT_SECRET_DEFAULT_VALUE="ndaijsoandaioian3128609hb@9jsaasea9iklaksmxj8jqwh";
     public static final String JWT_HEADER="Authorization";
     public static final String JWT_PREFIX="Bearer ";
 
@@ -17,12 +17,13 @@ public class ApplicationConstants {
     public static final String JOB_STATUS_DRAFT="DRAFT";
 
     public static final String NEW_MESSAGE="NEW";
-    public static final String READ_MESSAGE="READ";
     public static final String CLOSED_MESSAGE="CLOSED";
 
     public static final String SYSTEM="SYSTEM";
 
     public static final String ROLE_ADMIN="ROLE_ADMIN";
     public static final String ROLE_EMPLOYER="ROLE_EMPLOYER";
+
+    public static final String PENDING = "PENDING";
 
 }

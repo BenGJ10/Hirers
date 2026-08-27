@@ -34,3 +34,5 @@ build/
 
 
 hirers-data/
+logs/
+frontend/

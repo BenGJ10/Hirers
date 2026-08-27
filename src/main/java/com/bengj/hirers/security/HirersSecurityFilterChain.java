@@ -1,5 +1,6 @@
 package com.bengj.hirers.security;
 
+import com.bengj.hirers.security.cors.CorsProperties;
 import com.bengj.hirers.security.jwt.JwtTokenFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +50,8 @@ public class HirersSecurityFilterChain {
     @Qualifier("jobseekerPaths")
     private final List<String> jobseekerPaths;
 
+    private final CorsProperties corsProperties;
+
     @Bean
     /**
         * Configures the security filter chain for the application.
@@ -92,11 +95,11 @@ public class HirersSecurityFilterChain {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-        config.setAllowedMethods(Collections.singletonList("*"));
-        config.setAllowedHeaders(Collections.singletonList("*"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+        config.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        config.setAllowedMethods(corsProperties.getAllowedMethods());
+        config.setAllowedHeaders(corsProperties.getAllowedHeaders());
+        config.setAllowCredentials(corsProperties.getAllowCredentials());
+        config.setMaxAge(corsProperties.getMaxAge());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

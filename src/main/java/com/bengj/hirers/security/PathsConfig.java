@@ -13,6 +13,10 @@ public class PathsConfig {
         return List.of(
                 "/api/auth/login/public",
                 "/api/auth/register/public",
+                "/api/auth/verify-email/public",
+                "/api/auth/resend-otp/public",
+                "/api/auth/forgot-password/public",
+                "/api/auth/reset-password/public",
                 "/api/csrf-token/public",
                 "/api/companies/public",
                 "/api/contacts/public",
@@ -21,7 +25,8 @@ public class PathsConfig {
                 "/api/v3/api-docs/**",
                 "/swagger-resources/**",
                 "/swagger-ui.html",
-                "/webjars/**"
+                "/webjars/**",
+                "/hirers/actuator/**"
         );
     }
 

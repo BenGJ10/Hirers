@@ -46,6 +46,11 @@ public class HirersAuthenticationProvider implements AuthenticationProvider {
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().getName()));
 
         if(passwordEncoder.matches(password, user.getPasswordHash())){
+            if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+                throw new org.springframework.security.authentication.DisabledException(
+                        "Your email address has not been verified. Please check your inbox for the 6-digit verification code."
+                );
+            }
             return new UsernamePasswordAuthenticationToken(user, null, authorities);
         } else{
             throw new BadCredentialsException("Invalid password");

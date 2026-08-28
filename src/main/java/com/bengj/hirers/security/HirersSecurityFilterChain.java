@@ -66,6 +66,7 @@ public class HirersSecurityFilterChain {
      */
     SecurityFilterChain customSecurityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrfConfig -> csrfConfig
+                        .ignoringRequestMatchers("/hirers/actuator/**")
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
 

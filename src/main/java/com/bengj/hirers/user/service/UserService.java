@@ -187,7 +187,7 @@ public class UserService implements IUserService{
         user.getSavedJobs().remove(job);
     }
 
-    // Method to retrieve a user's saved jobs list'
+    // Method to retrieve a user's saved jobs list
     @Override
     public List<JobDto> getSavedJobs(String userEmail) {
         HirersUser user = userRepository.findUserByEmail(userEmail)

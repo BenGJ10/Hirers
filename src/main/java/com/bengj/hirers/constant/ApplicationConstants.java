@@ -26,4 +26,6 @@ public class ApplicationConstants {
 
     public static final String PENDING = "PENDING";
 
+    public static final int OTP_VALIDITY_MINUTES = 15;
+
 }

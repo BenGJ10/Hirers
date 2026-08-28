@@ -53,6 +53,9 @@ public class HirersUser extends BaseEntity {
     @OneToOne(mappedBy = "user")
     private Profile profile;
 
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
     @ManyToMany
     @JoinTable(name = "saved_jobs", joinColumns = {@JoinColumn(name = "user_id")}, inverseJoinColumns = {@JoinColumn(name = "job_id")})
     private Set<Job> savedJobs = new LinkedHashSet<>();

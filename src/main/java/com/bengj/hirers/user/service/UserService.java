@@ -4,6 +4,7 @@ import com.bengj.hirers.constant.ApplicationConstants;
 import com.bengj.hirers.dto.*;
 import com.bengj.hirers.entity.*;
 import com.bengj.hirers.repository.*;
+import com.bengj.hirers.s3.IS3StorageService;
 import com.bengj.hirers.util.ApplicationUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.bengj.hirers.util.ApplicationUtility.mapToJobApplicationDto;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +36,7 @@ public class UserService implements IUserService{
     private final ProfileRepository profileRepository;
     private final JobRepository jobRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final IS3StorageService s3StorageService;
 
     // Method to retrieve all users with pagination and sorting
     @Override
@@ -109,8 +108,8 @@ public class UserService implements IUserService{
     @Transactional
     public ProfileDto createOrUpdateProfile(String userEmail, String profileJson,
                                             MultipartFile profilePicture, MultipartFile resume) throws JsonProcessingException{
-        HirersUser user = userRepository.findUserByEmail(userEmail).
-                orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+        HirersUser user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
         // Check if the user already has a profile, if not create a new one                                        
         Profile profile = user.getProfile();
@@ -120,11 +119,46 @@ public class UserService implements IUserService{
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-
         // Deserialize the profile JSON into a ProfileDto object
         ProfileDto profileDto = objectMapper.readValue(profileJson, ProfileDto.class);
-        Profile savedProfile = profileRepository.save(mapToProfile(profile, profileDto, profilePicture, resume));
-        return mapToProfileDto(savedProfile, false);
+
+        // Update text fields
+        profile.setJobTitle(profileDto.jobTitle());
+        profile.setLocation(profileDto.location());
+        profile.setExperienceLevel(profileDto.experienceLevel());
+        profile.setProfessionalBio(profileDto.professionalBio());
+        profile.setPortfolioWebsite(profileDto.portfolioWebsite());
+
+        String oldPictureKey = profile.getProfilePictureKey();
+        String oldResumeKey = profile.getResumeKey();
+
+        // Handle profile picture upload to S3
+        if (profilePicture != null && !profilePicture.isEmpty()) {
+            String newPictureKey = s3StorageService.uploadProfilePicture(user.getId(), profilePicture);
+            profile.setProfilePictureKey(newPictureKey);
+            profile.setProfilePictureName(profilePicture.getOriginalFilename());
+            profile.setProfilePictureType(profilePicture.getContentType());
+        }
+
+        // Handle resume upload to S3
+        if (resume != null && !resume.isEmpty()) {
+            String newResumeKey = s3StorageService.uploadResume(user.getId(), resume);
+            profile.setResumeKey(newResumeKey);
+            profile.setResumeName(resume.getOriginalFilename());
+            profile.setResumeType(resume.getContentType());
+        }
+
+        Profile savedProfile = profileRepository.save(profile);
+
+        // Delete old S3 objects if new ones were successfully uploaded and saved
+        if (profilePicture != null && !profilePicture.isEmpty() && oldPictureKey != null && !oldPictureKey.equals(savedProfile.getProfilePictureKey())) {
+            s3StorageService.deleteObject(oldPictureKey);
+        }
+        if (resume != null && !resume.isEmpty() && oldResumeKey != null && !oldResumeKey.equals(savedProfile.getResumeKey())) {
+            s3StorageService.deleteObject(oldResumeKey);
+        }
+
+        return mapToProfileDto(savedProfile, null, null);
     }
 
     // Method to retrieve a user's profile based on the provided userEmail
@@ -135,7 +169,7 @@ public class UserService implements IUserService{
         if (user.getProfile() == null) {
             return null;
         }
-        return mapToProfileDto(user.getProfile(), false);
+        return mapToProfileDto(user.getProfile(), null, null);
     }   
 
     // Method to retrieve a user's profile picture based on the provided userEmail
@@ -143,10 +177,12 @@ public class UserService implements IUserService{
     public ProfileDto getProfilePicture(String userEmail) {
         HirersUser user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-        if (user.getProfile() == null) {
+        Profile profile = user.getProfile();
+        if (profile == null || profile.getProfilePictureKey() == null) {
             return null;
         }
-        return mapToProfileDto(user.getProfile(), true);
+        byte[] pictureBytes = s3StorageService.downloadObject(profile.getProfilePictureKey());
+        return mapToProfileDto(profile, pictureBytes, null);
     }
 
     // Method to retrieve a user's resume based on the provided userEmail
@@ -154,10 +190,12 @@ public class UserService implements IUserService{
     public ProfileDto getResume(String userEmail) {
         HirersUser user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-        if (user.getProfile() == null) {
+        Profile profile = user.getProfile();
+        if (profile == null || profile.getResumeKey() == null) {
             return null;
         }
-        return mapToProfileDto(user.getProfile(), true);
+        byte[] resumeBytes = s3StorageService.downloadObject(profile.getResumeKey());
+        return mapToProfileDto(profile, null, resumeBytes);
     }
 
     // Method to save a job to the user's saved jobs list'
@@ -262,57 +300,25 @@ public class UserService implements IUserService{
     }
 
 
-    // Utility method to transform ProfileDto to Profile entity and handle file uploads
-    private Profile mapToProfile(Profile profile, ProfileDto profileDto, MultipartFile profilePicture, MultipartFile resume) {
-        // Update text fields
-        profile.setJobTitle(profileDto.jobTitle());
-        profile.setLocation(profileDto.location());
-        profile.setExperienceLevel(profileDto.experienceLevel());
-        profile.setProfessionalBio(profileDto.professionalBio());
-        profile.setPortfolioWebsite(profileDto.portfolioWebsite());
-
-        // Handle profile picture upload
-        if (profilePicture != null && !profilePicture.isEmpty()) {
-            try {
-                profile.setProfilePicture(profilePicture.getBytes());
-                profile.setProfilePictureName(profilePicture.getOriginalFilename());
-                profile.setProfilePictureType(profilePicture.getContentType());
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to upload profile picture", e);
-            }
-        }
-
-        // Handle resume upload
-        if (resume != null && !resume.isEmpty()) {
-            try {
-                profile.setResume(resume.getBytes());
-                profile.setResumeName(resume.getOriginalFilename());
-                profile.setResumeType(resume.getContentType());
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to upload resume", e);
-            }
-        }
-        return profile;
-    }
-
     // Utility method to transform Profile entity to ProfileDTO
-    private ProfileDto mapToProfileDto(Profile profile, boolean includeBinaryData) {
-        ProfileDto dto;
-        if (includeBinaryData) {
-            dto = new ProfileDto(profile.getId(), profile.getUser().getId(),
-                    profile.getJobTitle(), profile.getLocation(), profile.getExperienceLevel(),
-                    profile.getProfessionalBio(), profile.getPortfolioWebsite(), profile.getProfilePicture(),
-                    profile.getProfilePictureName(), profile.getProfilePictureType(), profile.getResume(),
-                    profile.getResumeName(), profile.getResumeType(), profile.getCreatedAt(), profile.getUpdatedAt()
-            );
-        } else {
-            dto = new ProfileDto(profile.getId(), profile.getUser().getId(),
-                    profile.getJobTitle(), profile.getLocation(), profile.getExperienceLevel(),
-                    profile.getProfessionalBio(), profile.getPortfolioWebsite(), null,
-                    profile.getProfilePictureName(), profile.getProfilePictureType(), null,
-                    profile.getResumeName(), profile.getResumeType(), profile.getCreatedAt(), profile.getUpdatedAt());
-        }
-        return dto;
+    private ProfileDto mapToProfileDto(Profile profile, byte[] profilePictureBytes, byte[] resumeBytes) {
+        return new ProfileDto(
+                profile.getId(),
+                profile.getUser().getId(),
+                profile.getJobTitle(),
+                profile.getLocation(),
+                profile.getExperienceLevel(),
+                profile.getProfessionalBio(),
+                profile.getPortfolioWebsite(),
+                profilePictureBytes,
+                profile.getProfilePictureName(),
+                profile.getProfilePictureType(),
+                resumeBytes,
+                profile.getResumeName(),
+                profile.getResumeType(),
+                profile.getCreatedAt(),
+                profile.getUpdatedAt()
+        );
     }
 
     // Utility method to transform User entity to UserDTO

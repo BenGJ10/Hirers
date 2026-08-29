@@ -95,17 +95,20 @@ public class UserController {
         String userEmail = authentication.getName();
         ProfileDto profile = userService.getProfilePicture(userEmail);
         
-        // Check if the profile picture exists
-        byte[] picture = profile.profilePicture();
-        if (picture == null || picture.length == 0) {
+        // Check if the profile and picture exist
+        if (profile == null || profile.profilePicture() == null || profile.profilePicture().length == 0) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
         // Set the appropriate headers for the response, including content type and length
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(profile.profilePictureType()));
-        headers.setContentLength(picture.length);
-        return new ResponseEntity<>(picture, headers, HttpStatus.OK);
+        if (profile.profilePictureType() != null && !profile.profilePictureType().isBlank()) {
+            headers.setContentType(MediaType.parseMediaType(profile.profilePictureType()));
+        } else {
+            headers.setContentType(MediaType.IMAGE_JPEG);
+        }
+        headers.setContentLength(profile.profilePicture().length);
+        return new ResponseEntity<>(profile.profilePicture(), headers, HttpStatus.OK);
     }
 
     // Get the resume of the authenticated jobseeker
@@ -114,17 +117,23 @@ public class UserController {
         String userEmail = authentication.getName();
         ProfileDto profileDto = userService.getResume(userEmail);
         
-        // Check if the resume exists
-        byte[] resume = profileDto.resume();
-        if (resume == null || resume.length == 0) {
+        // Check if the profile and resume exist
+        if (profileDto == null || profileDto.resume() == null || profileDto.resume().length == 0) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
+        byte[] resume = profileDto.resume();
+
         // Set the appropriate headers for the response, including content type, length, and content disposition for file download
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(profileDto.resumeType()));
+        if (profileDto.resumeType() != null && !profileDto.resumeType().isBlank()) {
+            headers.setContentType(MediaType.parseMediaType(profileDto.resumeType()));
+        } else {
+            headers.setContentType(MediaType.APPLICATION_PDF);
+        }
         headers.setContentLength(resume.length);
-        headers.setContentDispositionFormData("attachment", profileDto.resumeName());
+        String fileName = profileDto.resumeName() != null ? profileDto.resumeName() : "resume.pdf";
+        headers.setContentDispositionFormData("attachment", fileName);
         return new ResponseEntity<>(resume, headers, HttpStatus.OK);
     }
 

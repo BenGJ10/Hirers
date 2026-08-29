@@ -80,19 +80,42 @@ CREATE TABLE IF NOT EXISTS roles
 -- Create a users table
 CREATE TABLE IF NOT EXISTS users
 (
-    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name          VARCHAR(255)                          NOT NULL,
-    email         VARCHAR(255)                          NOT NULL UNIQUE,
-    password_hash VARCHAR(500)                          NOT NULL,
-    mobile_number VARCHAR(20) UNIQUE,
-    role_id       BIGINT                                NOT NULL,
-    company_id    BIGINT                                NULL,
-    created_at    TIMESTAMP   DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    created_by    VARCHAR(20)                           NOT NULL,
-    updated_at    TIMESTAMP   DEFAULT NULL,
-    updated_by    VARCHAR(20) DEFAULT NULL,
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name           VARCHAR(255)                          NOT NULL,
+    email          VARCHAR(255)                          NOT NULL UNIQUE,
+    password_hash  VARCHAR(500)                          NOT NULL,
+    mobile_number  VARCHAR(20) UNIQUE,
+    role_id        BIGINT                                NOT NULL,
+    company_id     BIGINT                                NULL,
+    email_verified BOOLEAN     DEFAULT FALSE             NOT NULL,
+    created_at     TIMESTAMP   DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_by     VARCHAR(20)                           NOT NULL,
+    updated_at     TIMESTAMP   DEFAULT NULL,
+    updated_by     VARCHAR(20) DEFAULT NULL,
     CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles (id),
     CONSTRAINT fk_users_company FOREIGN KEY (company_id) REFERENCES companies (id) ON DELETE SET NULL
+);
+
+-- Create an email_verification_tokens table
+CREATE TABLE IF NOT EXISTS email_verification_tokens
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT                                NOT NULL UNIQUE,
+    otp_code    VARCHAR(6)                            NOT NULL,
+    expiry_date TIMESTAMP                             NOT NULL,
+    created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_email_verification_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Create a password_reset_tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens
+(
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT                                NOT NULL UNIQUE,
+    otp_code    VARCHAR(6)                            NOT NULL,
+    expiry_date TIMESTAMP                             NOT NULL,
+    created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- Create a profiles table
@@ -105,10 +128,10 @@ CREATE TABLE IF NOT EXISTS profiles
     experience_level     VARCHAR(50)                           NOT NULL,
     professional_bio     TEXT                                  NOT NULL,
     portfolio_website    VARCHAR(500),
-    profile_picture      MEDIUMBLOB,
+    profile_picture_key  VARCHAR(500),
     profile_picture_name VARCHAR(255),
     profile_picture_type VARCHAR(100),
-    resume               MEDIUMBLOB,
+    resume_key           VARCHAR(500),
     resume_name          VARCHAR(255),
     resume_type          VARCHAR(100),
     created_at           TIMESTAMP   DEFAULT CURRENT_TIMESTAMP NOT NULL,

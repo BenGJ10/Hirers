@@ -28,4 +28,7 @@ public class ApplicationConstants {
 
     public static final int OTP_VALIDITY_MINUTES = 15;
 
+    public static final String PROFILE_PICTURES_PREFIX = "profile-pictures/";
+    public static final String RESUMES_PREFIX = "resumes/";
+
 }

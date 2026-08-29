@@ -45,9 +45,9 @@ public class Profile extends BaseEntity {
     @Column(name = "portfolio_website", length = 500)
     private String portfolioWebsite;
 
-    @Lob
-    @Column(name = "profile_picture", columnDefinition = "MEDIUMBLOB")
-    private byte[] profilePicture;
+    @Size(max = 500)
+    @Column(name = "profile_picture_key", length = 500)
+    private String profilePictureKey;
 
     @Size(max = 255)
     @Column(name = "profile_picture_name")
@@ -57,9 +57,9 @@ public class Profile extends BaseEntity {
     @Column(name = "profile_picture_type", length = 100)
     private String profilePictureType;
 
-    @Lob
-    @Column(name = "resume", columnDefinition = "MEDIUMBLOB")
-    private byte[] resume;
+    @Size(max = 500)
+    @Column(name = "resume_key", length = 500)
+    private String resumeKey;
 
     @Size(max = 255)
     @Column(name = "resume_name")
@@ -68,6 +68,5 @@ public class Profile extends BaseEntity {
     @Size(max = 100)
     @Column(name = "resume_type", length = 100)
     private String resumeType;
-
 
 }

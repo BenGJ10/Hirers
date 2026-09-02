@@ -13,6 +13,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Objects;
 
+import com.bengj.hirers.security.oauth2.CustomOAuth2User;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+
 public class ApplicationUtility {
 
     // Get the logged in user
@@ -27,23 +30,39 @@ public class ApplicationUtility {
         Object principal = authentication.getPrincipal();
         String username;
 
-        if(principal instanceof HirersUser user){
+        if (principal instanceof HirersUser user){
             username = user.getEmail();
+        } else if (principal instanceof CustomOAuth2User customOAuth2User) {
+            username = customOAuth2User.getEmail() != null ? customOAuth2User.getEmail() : customOAuth2User.getName();
+        } else if (principal instanceof OAuth2User oAuth2User) {
+            String email = (String) oAuth2User.getAttributes().get("email");
+            username = email != null ? email : oAuth2User.getName();
+        } else {
+            username = authentication.getName();
         }
-        else{
-            username = principal.toString();
+
+        if (username == null || username.isBlank()) {
+            username = ApplicationConstants.SYSTEM;
         }
+
         return username;
     }
 
     // Utility method to transform Job entity to JobDto
     public static JobDto transformJobToDto(Job job) {
+        int appCount = 0;
+        if (job.getJobApplications() != null && !job.getJobApplications().isEmpty()) {
+            appCount = job.getJobApplications().size();
+        } else if (job.getApplicationsCount() != null) {
+            appCount = job.getApplicationsCount();
+        }
+
         return new JobDto(
                 job.getId(),
                 job.getTitle(),
-                job.getCompany().getId(),
-                job.getCompany().getName(),
-                job.getCompany().getLogo(),
+                job.getCompany() != null ? job.getCompany().getId() : null,
+                job.getCompany() != null ? job.getCompany().getName() : null,
+                job.getCompany() != null ? job.getCompany().getLogo() : null,
                 job.getLocation(),
                 job.getWorkType(),
                 job.getJobType(),
@@ -58,11 +77,12 @@ public class ApplicationUtility {
                 job.getBenefits(),
                 job.getPostedDate(),
                 job.getApplicationDeadline(),
-                job.getApplicationsCount(),
+                appCount,
                 job.getFeatured(),
                 job.getUrgent(),
                 job.getRemote(),
-                job.getStatus()
+                job.getStatus(),
+                job.getCreatedBy()
         );
     }
 

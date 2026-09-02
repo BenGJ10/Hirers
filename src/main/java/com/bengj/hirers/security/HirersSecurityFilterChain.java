@@ -2,6 +2,8 @@ package com.bengj.hirers.security;
 
 import com.bengj.hirers.security.cors.CorsProperties;
 import com.bengj.hirers.security.jwt.JwtTokenFilter;
+import com.bengj.hirers.security.oauth2.CustomOAuth2UserService;
+import com.bengj.hirers.security.oauth2.OAuth2AuthenticationSuccessHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -28,8 +30,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Collections;
 import java.util.List;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -51,6 +51,8 @@ public class HirersSecurityFilterChain {
     private final List<String> jobseekerPaths;
 
     private final CorsProperties corsProperties;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     /**
@@ -58,6 +60,7 @@ public class HirersSecurityFilterChain {
         * This method sets up CSRF protection, CORS configuration, and authorization rules for public and secured paths.
         * Defines public and secured paths for authorization.
         * Adds a JWT token filter before the basic authentication filter.
+        * Configures OAuth2 Login for Google and GitHub.
         * Disables form login and enables HTTP Basic authentication.
         
         * @param http The HttpSecurity object to configure.
@@ -80,6 +83,11 @@ public class HirersSecurityFilterChain {
                     jobseekerPaths.forEach(path -> requests.requestMatchers(path).hasRole("JOB_SEEKER"));
                     requests.anyRequest().denyAll();
                 })
+
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                )
 
                 .addFilterBefore(new JwtTokenFilter(publicPaths), BasicAuthenticationFilter.class)
                 .formLogin(AbstractHttpConfigurer::disable)

@@ -11,6 +11,4 @@ public interface HirersUserRepository extends JpaRepository<HirersUser, Long> {
     Optional<HirersUser> readUserByEmailOrMobileNumber(String email, String mobileNumber);
 
     Optional<HirersUser> findUserByEmail(String email);
-
-    Page<HirersUser> findAllByIsActiveTrue(Pageable pageable);
 }

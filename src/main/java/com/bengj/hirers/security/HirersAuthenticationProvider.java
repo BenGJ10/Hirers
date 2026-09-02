@@ -1,6 +1,7 @@
 package com.bengj.hirers.security;
 
 import com.bengj.hirers.entity.HirersUser;
+import com.bengj.hirers.enums.AuthProvider;
 import com.bengj.hirers.repository.HirersUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -44,6 +45,18 @@ public class HirersAuthenticationProvider implements AuthenticationProvider {
                 () -> new UsernameNotFoundException("User not found with username: " + username));
 
         List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRole().getName()));
+
+        if (user.getAuthProvider() != null && user.getAuthProvider() != AuthProvider.LOCAL) {
+            String providerName = user.getAuthProvider().name();
+            throw new BadCredentialsException("This account was registered using " + providerName +
+                    ". Please sign in using " + providerName + ".");
+        }
+
+        if (user.getPasswordHash() == null) {
+            String providerName = user.getAuthProvider() != null ? user.getAuthProvider().name() : "OAuth";
+            throw new BadCredentialsException("This account was registered using " + providerName +
+                    ". Please sign in using " + providerName + ".");
+        }
 
         if(passwordEncoder.matches(password, user.getPasswordHash())){
             if (!Boolean.TRUE.equals(user.getEmailVerified())) {

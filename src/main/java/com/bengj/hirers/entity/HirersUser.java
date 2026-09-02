@@ -1,5 +1,6 @@
 package com.bengj.hirers.entity;
 
+import com.bengj.hirers.enums.AuthProvider;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -32,9 +33,15 @@ public class HirersUser extends BaseEntity {
     private String email;
 
     @Size(max = 500)
-    @NotNull
-    @Column(name = "password_hash", nullable = false, length = 500)
+    @Column(name = "password_hash", length = 500)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_provider", nullable = false, length = 20)
+    private AuthProvider authProvider = AuthProvider.LOCAL;
+
+    @Column(name = "provider_id")
+    private String providerId;
 
     @Size(max = 20)
     @Column(name = "mobile_number", length = 20)

@@ -58,6 +58,7 @@ public record JobDto(
         Boolean featured,
         Boolean urgent,
         Boolean remote,
-        String status
+        String status,
+        String createdBy
 ) implements Serializable {
 }

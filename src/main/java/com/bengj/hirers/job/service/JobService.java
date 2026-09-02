@@ -3,13 +3,16 @@ package com.bengj.hirers.job.service;
 import com.bengj.hirers.constant.ApplicationConstants;
 import com.bengj.hirers.dto.JobApplicationDto;
 import com.bengj.hirers.dto.JobDto;
+import com.bengj.hirers.dto.ProfileDto;
 import com.bengj.hirers.dto.UpdateJobApplicationDto;
 import com.bengj.hirers.entity.HirersUser;
 import com.bengj.hirers.entity.Job;
 import com.bengj.hirers.entity.JobApplication;
+import com.bengj.hirers.entity.Profile;
 import com.bengj.hirers.repository.HirersUserRepository;
 import com.bengj.hirers.repository.JobApplicationRepository;
 import com.bengj.hirers.repository.JobRepository;
+import com.bengj.hirers.s3.IS3StorageService;
 import com.bengj.hirers.util.ApplicationUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -28,6 +31,7 @@ public class JobService implements IJobService{
     private final JobRepository jobRepository;
     private final HirersUserRepository userRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final IS3StorageService s3StorageService;
 
 
     // Method to get jobs for a specific employer by their email
@@ -58,25 +62,26 @@ public class JobService implements IJobService{
         if (!status.equals(ApplicationConstants.JOB_STATUS_ACTIVE)
                 && !status.equals(ApplicationConstants.JOB_STATUS_CLOSED)
                 && !status.equals(ApplicationConstants.JOB_STATUS_DRAFT)) {
-            throw new RuntimeException("Invalid status. Must be ACTIVE, CLOSED, or DRAFT");
+            throw new RuntimeException("Invalid job status");
         }
 
-        // Find the user by email
+        // Find the job by ID
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with ID: " + jobId));
+
+        // Find the employer by email
         HirersUser employer = userRepository.findUserByEmail(employerEmail)
                 .orElseThrow(() -> new RuntimeException("Employer not found"));
 
-        // Check if the employer has a company assigned
-        if (employer.getCompany() == null) {
-            throw new RuntimeException("Employer does not have a company assigned");
+        // Check if the job belongs to the employer's company
+        if (!job.getCompany().getId().equals(employer.getCompany().getId())) {
+            throw new RuntimeException("Employer is not authorized to update this job");
         }
 
-        // Find the job by jobId within the employer's company jobs
-        Job job = employer.getCompany().getJobs().stream()
-                .filter(j -> j.getId().equals(jobId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+        // Update the status of the job and save it
         job.setStatus(status);
-        return ApplicationUtility.transformJobToDto(job);
+        Job updatedJob = jobRepository.save(job);
+        return ApplicationUtility.transformJobToDto(updatedJob);
     }
 
 
@@ -96,13 +101,51 @@ public class JobService implements IJobService{
         // Create a new Job entity from the provided JobDto, set its properties, and save it to the repository
         Job job = transformDtoToEntity(jobDto);
         job.setPostedDate(Instant.now());
-        job.setApplicationsCount(0);
         job.setStatus(ApplicationConstants.JOB_STATUS_DRAFT);
         job.setCompany(employer.getCompany());
 
         // We have to save the job manually, as hibernate will not automatically persist the job when we set it to the company's jobs list
         Job savedJob = jobRepository.save(job);
         return ApplicationUtility.transformJobToDto(jobRepository.save(savedJob));
+    }
+
+    // Method to update full details of a job by its creator employer
+    @Override
+    @Transactional
+    public JobDto updateJob(Long jobId, JobDto jobDto, String employerEmail) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new RuntimeException("Job not found with ID: " + jobId));
+
+        HirersUser employer = userRepository.findUserByEmail(employerEmail)
+                .orElseThrow(() -> new RuntimeException("Employer not found"));
+
+        if (employer.getCompany() == null || !job.getCompany().getId().equals(employer.getCompany().getId())) {
+            throw new RuntimeException("Employer is not authorized to update this job");
+        }
+
+        job.setTitle(jobDto.title());
+        job.setLocation(jobDto.location());
+        job.setWorkType(jobDto.workType());
+        job.setJobType(jobDto.jobType());
+        job.setCategory(jobDto.category());
+        job.setExperienceLevel(jobDto.experienceLevel());
+        job.setSalaryMin(jobDto.salaryMin());
+        job.setSalaryMax(jobDto.salaryMax());
+        job.setSalaryCurrency(jobDto.salaryCurrency());
+        job.setSalaryPeriod(jobDto.salaryPeriod());
+        job.setDescription(jobDto.description());
+        job.setRequirements(jobDto.requirements());
+        job.setBenefits(jobDto.benefits());
+        job.setApplicationDeadline(jobDto.applicationDeadline());
+        if (jobDto.featured() != null) job.setFeatured(jobDto.featured());
+        if (jobDto.urgent() != null) job.setUrgent(jobDto.urgent());
+        if (jobDto.remote() != null) job.setRemote(jobDto.remote());
+        if (jobDto.status() != null && !jobDto.status().isBlank()) {
+            job.setStatus(jobDto.status().toUpperCase());
+        }
+
+        Job updatedJob = jobRepository.save(job);
+        return ApplicationUtility.transformJobToDto(updatedJob);
     }
 
     // Method to get all job applications for a specific job
@@ -121,6 +164,68 @@ public class JobService implements IJobService{
         int updatedRows = jobApplicationRepository.updateStatusAndNotesById(
                 dto.status().name(), dto.notes(), dto.applicationId(), ApplicationUtility.getLoggedInUser());
         return updatedRows > 0;
+    }
+
+    // Method to get candidate resume for a specific application from S3
+    @Override
+    public ProfileDto getApplicationResume(Long applicationId) {
+        JobApplication application = jobApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Job application not found with ID: " + applicationId));
+
+        Profile profile = application.getUser().getProfile();
+        if (profile == null || profile.getResumeKey() == null) {
+            return null;
+        }
+
+        byte[] resumeBytes = s3StorageService.downloadObject(profile.getResumeKey());
+        return new ProfileDto(
+                profile.getId(),
+                application.getUser().getId(),
+                profile.getJobTitle(),
+                profile.getLocation(),
+                profile.getExperienceLevel(),
+                profile.getProfessionalBio(),
+                profile.getPortfolioWebsite(),
+                null,
+                null,
+                null,
+                resumeBytes,
+                profile.getResumeName(),
+                profile.getResumeType(),
+                profile.getCreatedAt(),
+                profile.getUpdatedAt()
+        );
+    }
+
+    // Method to get a candidate profile picture for a specific application from S3
+    @Override
+    public ProfileDto getApplicationProfilePicture(Long applicationId) {
+        JobApplication application = jobApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new RuntimeException("Job application not found with ID: " + applicationId));
+
+        Profile profile = application.getUser().getProfile();
+        if (profile == null || profile.getProfilePictureKey() == null) {
+            return null;
+        }
+
+        byte[] pictureBytes = s3StorageService.downloadObject(profile.getProfilePictureKey());
+        return new ProfileDto(
+                profile.getId(),
+                application.getUser().getId(),
+                profile.getJobTitle(),
+                profile.getLocation(),
+                profile.getExperienceLevel(),
+                profile.getProfessionalBio(),
+                profile.getPortfolioWebsite(),
+                pictureBytes,
+                profile.getProfilePictureName(),
+                profile.getProfilePictureType(),
+                null,
+                null,
+                null,
+                profile.getCreatedAt(),
+                profile.getUpdatedAt()
+        );
     }
 
     // Utility method to transform JobDto to Job entity

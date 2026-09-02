@@ -2,6 +2,7 @@ package com.bengj.hirers.job.service;
 
 import com.bengj.hirers.dto.JobApplicationDto;
 import com.bengj.hirers.dto.JobDto;
+import com.bengj.hirers.dto.ProfileDto;
 import com.bengj.hirers.dto.UpdateJobApplicationDto;
 
 import java.util.List;
@@ -14,8 +15,14 @@ public interface IJobService {
 
     JobDto createJob(JobDto jobDto, String employerEmail);
 
+    JobDto updateJob(Long jobId, JobDto jobDto, String employerEmail);
+
     List<JobApplicationDto> getApplicationsByJobForEmployer(Long jobId);
 
     boolean updateJobApplication(UpdateJobApplicationDto updateJobApplicationDto);
+
+    ProfileDto getApplicationResume(Long applicationId);
+
+    ProfileDto getApplicationProfilePicture(Long applicationId);
 
 }

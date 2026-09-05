@@ -59,8 +59,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Environment env = getEnvironment();
                 
                 // Get the secret key for JWT validation from the environment or use a default value
-                String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,
-                        ApplicationConstants.JWT_SECRET_DEFAULT_VALUE);
+                String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY);
 
                 // Create a SecretKey object using the secret key for HMAC SHA algorithm
                 SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

@@ -54,8 +54,7 @@ public class JwtUtil {
         }
 
         // Get the secret key from the environment variables or use the default value
-        String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,
-                ApplicationConstants.JWT_SECRET_DEFAULT_VALUE);
+        String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY);
         
         // Create a SecretKey object from the secret key string
         SecretKey secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));

@@ -1,0 +1,24 @@
+# Git & IDE artifacts
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+*.iml
+.DS_Store
+
+# Build artifacts and caches
+target/
+*.class
+*.jar
+*.war
+logs/
+hirers-data/
+
+# Frontend (separate deployment to S3 + CloudFront)
+frontend/
+node_modules/
+
+# Documentation & Markdown
+*.md
+images/
